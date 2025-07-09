@@ -19,7 +19,7 @@ import (
 
 type User struct {
 	ID       int64 `gorm:"primaryKey"`
-	Receiver string
+	Receiver int64
 }
 
 type Link struct {
@@ -74,15 +74,21 @@ func main() {
 		start := strings.Split(msg.Text, " ")
 		if len(start) == 2 {
 			userId, err := getUserFromLink(start[1], db)
-			if err == nil && userId == msg.Chat.ID {
+			if userId == msg.Chat.ID {
 				bot.SendMessage(ctx, tu.Messagef(
 					tu.ID(msg.Chat.ID),
 					"You can't text yourself",
 				))
 				return nil
+			} else if err != nil {
+				bot.SendMessage(ctx, tu.Messagef(
+					tu.ID(msg.Chat.ID),
+					"Something went wrong...",
+				))
+				return nil
 			}
 			db.Delete(&User{}, msg.From.ID)
-			db.Create(&User{ID: msg.From.ID, Receiver: start[1]})
+			db.Create(&User{ID: msg.From.ID, Receiver: userId})
 			bot.SendMessage(ctx, tu.Messagef(
 				tu.ID(msg.Chat.ID),
 				"Write your message to user!",
@@ -98,10 +104,16 @@ func main() {
 		return nil
 	}, th.CommandEqual("start"))
 	bh.HandleMessage(func(ctx *th.Context, msg telego.Message) error {
-		// var receiver User
+		var receiver User
+		db.Take(&receiver, msg.Chat.ID)
+		fmt.Println(receiver)
 		bot.SendMessage(ctx, tu.Messagef(
-			tu.ID(msg.Chat.ID),
-			"msggg",
+			tu.ID(receiver.Receiver),
+			"New message!\n\n%s", msg.Text,
+		))
+		bot.SendMessage(ctx, tu.Messagef(
+			tu.ID(msg.From.ID),
+			"Delivered. You can write another one",
 		))
 		return nil
 	})
