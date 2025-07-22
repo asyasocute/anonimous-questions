@@ -26,6 +26,8 @@ type Link struct {
 	Text   string `gorm:"primaryKey"`
 	UserID int64
 }
+type Ban struct {
+}
 
 func getUserLink(UserID int64, db *gorm.DB) string {
 	var link Link
@@ -103,6 +105,7 @@ func main() {
 		}
 		return nil
 	}, th.CommandEqual("start"))
+
 	bh.HandleMessage(func(ctx *th.Context, msg telego.Message) error {
 		var receiver User
 		db.Take(&receiver, msg.Chat.ID)
